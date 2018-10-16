@@ -33,6 +33,7 @@
 #define ACURITE_MSGTYPE_6045M                           0x2f
 #define ACURITE_MSGTYPE_5N1_WINDSPEED_WINDDIR_RAINFALL  0x31
 #define ACURITE_MSGTYPE_5N1_WINDSPEED_TEMP_HUMIDITY     0x38
+#define ACURITE_MSGTYPE_WINDSPEED_TEMP_HUMIDITY_3N1     0x20
 
 
 static char time_str[LOCAL_TIME_BUFLEN];
@@ -732,6 +733,27 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
                 NULL);
             data_acquired_handler(data);
 
+	    } else if (message_type == ACURITE_MSGTYPE_WINDSPEED_TEMP_HUMIDITY_3N1) {
+            // Wind speed, temperature and humidity for 3-n-1
+            sensor_id = ((bb[0] & 0x3f) << 8) | bb[1]; // 3-n-1 sensor ID is the bottom 14 bits of byte 0 & 1
+            humidity = acurite_getHumidity(bb[3]);
+            tempf = acurite_getTemp(bb[4], bb[5]) - 108; // regression yields (rawtemp-1480)*0.1
+            wind_speed_mph = bb[6] & 0x7f; // seems to be plain MPH
+
+            data = data_make(
+                "time",         "",   DATA_STRING,    time_str,
+                "model",        "",   DATA_STRING,    "Acurite 3n1 sensor",
+                "sensor_id",    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,
+                "channel",      NULL,   DATA_STRING,    &channel_str,
+                "sequence_num",  NULL,   DATA_INT,      sequence_num,
+                "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
+                "message_type", NULL,   DATA_INT,       message_type,
+                "wind_speed_mph",   "wind_speed",   DATA_FORMAT,    "%.1f mph", DATA_DOUBLE,     wind_speed_mph,
+                "temperature_F", 	"temperature",	DATA_FORMAT,    "%.1f F", DATA_DOUBLE,    tempf,
+                "humidity",     NULL,	DATA_FORMAT,    "%d",   DATA_INT,   humidity,
+                NULL);
+            data_acquired_handler(data);
+
 	    } else {
             fprintf(stderr, "%s Acurite 5n1 sensor 0x%04X Ch %c, Status %02X, Unknown message type 0x%02x\n",
                 time_str, sensor_id, channel, bb[3], message_type);
@@ -792,7 +814,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
  */
 
 static int acurite_986_callback(bitbuffer_t *bitbuf) {
-    int browlen;
+    int const browlen = 5;
     uint8_t *bb, sensor_num, status, crc, crcc;
     uint8_t br[8];
     int8_t tempf; // Raw Temp is 8 bit signed Fahrenheit
@@ -806,8 +828,6 @@ static int acurite_986_callback(bitbuffer_t *bitbuf) {
     local_time_str(0, time_str);
 
     for (uint16_t brow = 0; brow < bitbuf->num_rows; ++brow) {
-	browlen = (bitbuf->bits_per_row[brow] + 7)/8;
-	bb = bitbuf->bb[brow];
 
 	if (debug_output > 1)
 	    fprintf(stderr,"acurite_986: row %d bits %d, bytes %d \n", brow, bitbuf->bits_per_row[brow], browlen);
@@ -818,6 +838,7 @@ static int acurite_986_callback(bitbuffer_t *bitbuf) {
 		fprintf(stderr,"acurite_986: skipping wrong len\n");
 	    continue;
 	}
+	bb = bitbuf->bb[brow];
 
 	// Reduce false positives
 	// may eliminate these with a better PPM (precise?) demod.
@@ -825,11 +846,6 @@ static int acurite_986_callback(bitbuffer_t *bitbuf) {
 	   (bb[0] == 0x00 && bb[1] == 0x00 && bb[2] == 0x00)) {
 	    continue;
 	}
-
-	// There will be 1 extra false zero bit added by the demod.
-	// this forces an extra zero byte to be added
-	if (browlen > 5 && bb[browlen - 1] == 0)
-	    browlen--;
 
 	// Reverse the bits, msg sent LSB first
 	for (uint8_t i = 0; i < browlen; i++)
@@ -1173,21 +1189,20 @@ r_device acurite_txr = {
  *
  * Temperature only, Pulse Position
  *
- * 4 x 400 sample (150 uS) start/sync pulses
- * 40 (42) 50 (20 uS)  (sample data pulses)
- * short gap approx 130 samples
- * long gap approx 220 samples
- *
+ * A preamble: 2x of 216 us pulse + 276 us gap, 4x of 1600 us pulse + 1560 us gap
+ * 39 bits of data: 220 us pulses with short gap of 520 us or long gap of 880 us
+ * A transmission consists of two packets that run into each other.
+ * There should be 40 bits of data though. But the last bit can't be detected.
  */
 r_device acurite_986 = {
     .name           = "Acurite 986 Refrigerator / Freezer Thermometer",
     .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 720,   // Threshold between short and long gap
+    .short_limit    = 720,   // Threshold between short 520 us and long 880 us gap
     .long_limit     = 1280,
     .reset_limit    = 4000,
     .json_callback  = &acurite_986_callback,
     .disabled       = 0,
-    .demod_arg      = 2,
+    .demod_arg      = 0,     // not used
 };
 
 /*

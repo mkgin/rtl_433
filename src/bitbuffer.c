@@ -120,7 +120,8 @@ unsigned bitbuffer_search(bitbuffer_t *bitbuffer, unsigned row, unsigned start,
 			if (ppos == pattern_bits_len)
 				return ipos - pattern_bits_len;
 		} else {
-			ipos += -ppos + 1;
+			ipos -= ppos;
+			ipos++;
 			ppos = 0;
 		}
 	}
@@ -262,11 +263,13 @@ void bitbuffer_parse(bitbuffer_t *bits, const char *code)
             continue;
 
         } else if (*c == '{') {
-            if (bits->num_rows > 0) {
-                if (width >= 0) {
-                    bits->bits_per_row[bits->num_rows - 1] = width;
-                }
+            if (bits->num_rows == 0) {
+                bits->num_rows++;
+            } else {
                 bitbuffer_add_row(bits);
+            }
+            if (width >= 0) {
+                bits->bits_per_row[bits->num_rows - 2] = width;
             }
 
             width = strtol(c + 1, (char **)&c, 0);
@@ -292,7 +295,10 @@ void bitbuffer_parse(bitbuffer_t *bits, const char *code)
         bitbuffer_add_bit(bits, data >> 1 & 0x01);
         bitbuffer_add_bit(bits, data >> 0 & 0x01);
     }
-    if (width >= 0 && bits->num_rows > 0) {
+    if (width >= 0) {
+        if (bits->num_rows == 0) {
+            bits->num_rows++;
+        }
         bits->bits_per_row[bits->num_rows - 1] = width;
     }
 }

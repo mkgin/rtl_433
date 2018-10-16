@@ -1,6 +1,6 @@
 /* Various Oregon Scientific protocols
  *
- * Copyright (C) 2015 Helge Weissig, Denis Bodor, vestom, Karl Lattimer,
+ * Copyright (C) 2015 Helge Weissig, Denis Bodor, Tommy Vestermark, Karl Lattimer,
  * deennoo, pclov3r, onlinux, Pasquale Fiorillo.
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -430,7 +430,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             "battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
             "temperature_C",  "Celsius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
             "humidity",       "Humidity",   DATA_FORMAT, "%u %%", DATA_INT, get_os_humidity(msg, sensor_id),
-            "pressure_hPa",  "Pressure",    DATA_FORMAT, "%.02f mPa", DATA_DOUBLE, pressure,
+            "pressure_hPa",  "Pressure",    DATA_FORMAT, "%.02f hPa", DATA_DOUBLE, pressure,
             NULL);
         data_acquired_handler(data);
       //}

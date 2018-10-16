@@ -69,7 +69,7 @@
 		DECL(efergy_optical) \
 		DECL(hondaremote) \
 		DECL(template) \
-		DECL(fineoffset_XC0400) \
+		DECL(template) \
 		DECL(radiohead_ask) \
 		DECL(kerui) \
 		DECL(fineoffset_wh1050) \
@@ -106,7 +106,14 @@
 		DECL(interlogix) \
 		DECL(dish_remote_6_3) \
 		DECL(ss_sensor) \
-		DECL(sensible_living)
+		DECL(sensible_living) \
+		DECL(m_bus_mode_c_t) \
+		DECL(m_bus_mode_s) \
+		DECL(m_bus_mode_r) \
+		DECL(m_bus_mode_f) \
+		DECL(wssensor) \
+		DECL(wt1024) \
+		DECL(tpms_pmv107j)
 
 typedef struct {
 	unsigned protocol_num; // fixed sequence number, assigned in main()

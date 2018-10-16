@@ -11,8 +11,6 @@
 #include "rtl_433.h"
 #include "util.h"
 
-#define MODEL "Thermopro TP12 Thermometer"
-
 /*
 A normal sequence for the TP12:
 
@@ -56,7 +54,12 @@ static int thermopro_tp12_sensor_callback(bitbuffer_t *bitbuffer) {
 
     // The device transmits 16 rows, let's check for 3 matching.
     // (Really 17 rows, but the last one doesn't match because it's missing a trailing 1.)
-    good = bitbuffer_find_repeated_row(bitbuffer, 5, 40);
+    // Update for TP08: same is true but only 2 rows.
+    good = bitbuffer_find_repeated_row(
+        bitbuffer, 
+        (bitbuffer->num_rows > 5) ? 5 : 2,
+        40
+    );
     if (good < 0) {
         return 0;
     }
@@ -94,7 +97,7 @@ static int thermopro_tp12_sensor_callback(bitbuffer_t *bitbuffer) {
 
     local_time_str(0, time_str);
     data = data_make("time",          "",            DATA_STRING, time_str,
-                     "model",         "",            DATA_STRING, MODEL,
+                     "model",         "",            DATA_STRING, "Thermopro TP12 Thermometer",
                      "id",            "Id",          DATA_FORMAT, "\t %d",   DATA_INT,    device,
                      "temperature_1_C", "Temperature 1 (Food)", DATA_FORMAT, "%.01f C", DATA_DOUBLE, fTemp1,
                      "temperature_2_C", "Temperature 2 (Barbecue)", DATA_FORMAT, "%.01f C", DATA_DOUBLE, fTemp2,
@@ -134,7 +137,7 @@ Those gaps are suspiciously close to 500 us and 1500 us.
 */
 
 r_device thermopro_tp12 = {
-    .name          = MODEL,
+    .name          = "Thermopro TP08/TP12 thermometer",
     .modulation    = OOK_PULSE_PPM_RAW,
     // note that these are in microseconds, not samples.
     .short_limit   = 1000,

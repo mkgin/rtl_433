@@ -3,46 +3,15 @@ rtl_433
 
 rtl_433 turns your Realtek RTL2832 based DVB dongle into a 433.92MHz generic data receiver
 
+Building/installation:
+----------------------
+
+See [BUILDING.md](BUILDING.md)
+
 How to add support for unsupported sensors
 ------------------------------------------
 
 Read the Test Data section at the bottom.
-
-
-Installation instructions:
---------------------------
-
-Compiling rtl_433 requires [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr) to be installed.
-
-Depending on your system, you may also need to install the following libraries.
-
-Debian:
-
-    sudo apt-get install libtool libusb-1.0.0-dev librtlsdr-dev rtl-sdr build-essential autoconf cmake pkg-config
-
-Centos/Fedora/RHEL (for Centos/RHEL with enabled EPEL):
-
-    sudo dnf install libtool libusb-devel rtl-sdr-devel rtl-sdr
-
-Installation using cmake:
-
-    cd rtl_433/
-    mkdir build
-    cd build
-    cmake ../
-    make
-    make install
-
-Installation using autoconf:
-
-    cd rtl_433/
-    autoreconf --install
-    ./configure
-    make
-    make install
-
-The final 'make install' step should be run as a user with appropriate permissions - if in doubt, 'sudo' it.
-
 
 Running:
 --------
@@ -58,7 +27,6 @@ Usage:	= Tuner options =
 	[-H <seconds>] Hop interval for polling of multiple frequencies (default: 600 seconds)
 	[-p <ppm_error] Correct rtl-sdr tuner frequency offset error (default: 0)
 	[-s <sample rate>] Set sample rate (default: 250000 Hz)
-	[-S] Force sync output (default: async)
 	= Demodulator options =
 	[-R <device>] Enable only the specified device decoding protocol (can be used multiple times)
 	[-G] Enable all device protocols, included those disabled by default
@@ -73,29 +41,26 @@ Usage:	= Tuner options =
 	[-I] Include only: 0 = all (default), 1 = unknown devices, 2 = known devices
 	[-D] Print debug info on event (repeat for more info)
 	[-q] Quiet mode, suppress non-data messages
-	[-W] Overwrite mode, disable checks to prevent files from being overwritten
 	[-y <code>] Verify decoding of demodulated test data (e.g. "{25}fb2dd58") with enabled devices
 	= File I/O options =
 	[-t] Test signal auto save. Use it together with analyze mode (-a -t). Creates one file per signal
 		 Note: Saves raw I/Q samples (uint8 pcm, 2 channel). Preferred mode for generating test files
 	[-r <filename>] Read data from input file instead of a receiver
-	[-m <mode>] Data file mode for input / output file (default: 0)
-		 0 = Raw I/Q samples (uint8, 2 channel)
-		 1 = AM demodulated samples (int16 pcm, 1 channel)
-		 2 = FM demodulated samples (int16) (experimental)
-		 3 = Raw I/Q samples (cf32, 2 channel)
-		 Note: If output file is specified, input will always be I/Q
+	[-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)
+	[-W <filename>] Save data stream to output file, overwrite existing file
 	[-F] kv|json|csv|syslog Produce decoded output in given format. Not yet supported by all drivers.
-		 append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
-		 specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
+		 Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
+		 Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
 	[-C] native|si|customary Convert units in decoded output.
-	[-T] specify number of seconds to run
+	[-T] Specify number of seconds to run
 	[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).
 	[-E] Stop after outputting successful event(s)
-	[<filename>] Save data stream to output file (a '-' dumps samples to stdout)
+	[-V] Output the version string and exit
+	[-h] Output this usage help and exit
+		 Use -R, -X, -F, -r, or -w without argument for more help
 
 Supported device protocols:
-    [01]* Silvercrest Remote Control
+    [01]  Silvercrest Remote Control
     [02]  Rubicson Temperature Sensor
     [03]  Prologue Temperature Sensor
     [04]  Waveman Switch Transmitter
@@ -112,7 +77,7 @@ Supported device protocols:
     [15]  KlikAanKlikUit Wireless Switch
     [16]  AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon)
     [17]  Cardin S466-TX2
-    [18]  Fine Offset Electronics, WH2 Temperature/Humidity Sensor
+    [18]  Fine Offset Electronics, WH2, WH5, Telldus Temperature/Humidity/Rain Sensor
     [19]  Nexus Temperature & Humidity Sensor
     [20]  Ambient Weather Temperature Sensor
     [21]  Calibeur RF-104 Sensor
@@ -160,7 +125,7 @@ Supported device protocols:
     [63]  Efergy Optical
     [64]  Honda Car Key
     [65]* Template decoder
-    [66]  Fine Offset Electronics, XC0400
+    [66]* Template decoder
     [67]  Radiohead ASK
     [68]  Kerui PIR Sensor
     [69]  Fine Offset WH1050 Weather Station
@@ -169,10 +134,10 @@ Supported device protocols:
     [72]* RF-tech
     [73]  LaCrosse TX141-Bv2/TX141TH-Bv2 sensor
     [74]  Acurite 00275rm,00276rm Temp/Humidity with optional probe
-    [75]  LaCrosse TX35DTH-IT Temperature sensor
+    [75]  LaCrosse TX35DTH-IT, TFA Dostmann 30.3155 Temperature/Humidity sensor
     [76]  LaCrosse TX29IT Temperature sensor
     [77]  Vaillant calorMatic 340f Central Heating Control
-    [78]  Fine Offset Electronics, WH25 Temperature/Humidity/Pressure Sensor
+    [78]  Fine Offset Electronics, WH25, WH24, HP1000 Temperature/Humidity/Pressure Sensor
     [79]  Fine Offset Electronics, WH0530 Temperature/Rain Sensor
     [80]  IBIS beacon
     [81]  Oil Ultrasonic STANDARD FSK
@@ -191,13 +156,20 @@ Supported device protocols:
     [94]  Philips outdoor temperature sensor
     [95]  Schrader TPMS EG53MA4
     [96]  Nexa
-    [97]  Thermopro TP12 Thermometer
+    [97]  Thermopro TP08/TP12 thermometer
     [98]  GE Color Effects
     [99]  X10 Security
     [100]  Interlogix GE UTC Security Devices
     [101]* Dish remote 6.3
     [102]* SimpliSafe Home Security System (May require disabling automatic gain for KeyPad decodes)
     [103]  Sensible Living Mini-Plant Moisture Sensor
+    [104]* Wireless M-Bus, Mode C&T, 100kbps (-f 868950000 -s 1200000)
+    [105]* Wireless M-Bus, Mode S, 32.768kbps (-f 868300000 -s 1000000)
+    [106]* Wireless M-Bus, Mode R, 4.8kbps (-f 868330000)
+    [107]* Wireless M-Bus, Mode F, 2.4kbps
+    [108]  WS Temperature Sensor
+    [109]  WT0124 Pool Thermometer
+    [110]  PMV-107J (Toyota) TPMS
 
 * Disabled by default, use -R n or -G
 
